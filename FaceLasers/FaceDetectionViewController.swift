@@ -152,7 +152,12 @@ extension FaceDetectionViewController {
                 faceView.clear()
                 return
         }
+      
+      if faceViewHidden {
+        updateLaserView(for: result)
+      } else {
         updateFaceView(for: result)
+      }
     }
     
     func convert(rect: CGRect) -> CGRect {
@@ -222,5 +227,38 @@ extension FaceDetectionViewController {
     if let faceContour = landmark(points: landmarks.faceContour?.normalizedPoints, to: result.boundingBox) {
       faceView.faceContour = faceContour
     }  
+  }
+  
+  func updateLaserView(for result: VNFaceObservation) {
+    laserView.clear()
+    
+    let yaw = result.yaw ?? 0.0
+    if yaw == 0.0 { return }
+    
+    var origins: [CGPoint] = []
+    
+    if let point = result.landmarks?.leftPupil?.normalizedPoints.first {
+      let origin = landmark(point: point, to: result.boundingBox)
+      origins.append(origin)
+    }
+    
+    if let point = result.landmarks?.rightPupil?.normalizedPoints.first {
+      let origin = landmark(point: point, to: result.boundingBox)
+      origins.append(origin)
+    }
+    
+    let avgY = origins.map { $0.y }.reduce(0.0, +) / CGFloat(origins.count)
+    let focusY = (avgY < midY) ? 0.75 * maxY : 0.25 * maxY
+    let focusX = (yaw.doubleValue < 0.0) ? -100.0 : maxX + 100.0
+    let focus = CGPoint(x: focusX, y: focusY)
+    
+    for origin in origins {
+      let laser = Laser(origin: origin, focus: focus)
+      laserView.add(laser: laser)
+    }
+    
+    DispatchQueue.main.async {
+      self.laserView.setNeedsDisplay()
+    }
   }
 }
