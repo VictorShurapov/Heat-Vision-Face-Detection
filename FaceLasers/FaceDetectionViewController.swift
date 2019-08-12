@@ -177,19 +177,50 @@ extension FaceDetectionViewController {
   }
   
   func updateFaceView(for result: VNFaceObservation) {
+    
     defer {
       DispatchQueue.main.async {
         self.faceView.setNeedsDisplay()
       }
     }
     
+    // The bounding box of the detected object (face).
     let box = result.boundingBox
     faceView.boundingBox = convert(rect: box)
     
+    // The facial features found in the detected face.
     guard let landmarks = result.landmarks else { return }
     
     if let leftEye = landmark(points: landmarks.leftEye?.normalizedPoints, to: result.boundingBox) {
       faceView.leftEye = leftEye
     }
+    
+    if let rightEye = landmark(points: landmarks.rightEye?.normalizedPoints, to: result.boundingBox) {
+      faceView.rightEye = rightEye
+    }
+    
+    if let leftEyebrow = landmark(points: landmarks.leftEyebrow?.normalizedPoints, to: result.boundingBox) {
+      faceView.leftEyebrow = leftEyebrow
+    }
+    
+    if let rightEyebrow = landmark(points: landmarks.rightEyebrow?.normalizedPoints, to: result.boundingBox) {
+      faceView.rightEyebrow = rightEyebrow
+    }
+    
+    if let nose = landmark(points: landmarks.nose?.normalizedPoints, to: result.boundingBox) {
+      faceView.nose = nose
+    }
+    
+    if let outerLips = landmark(points: landmarks.outerLips?.normalizedPoints, to: result.boundingBox) {
+      faceView.outerLips = outerLips
+    }
+    
+    if let innerLips = landmark(points: landmarks.innerLips?.normalizedPoints, to: result.boundingBox) {
+      faceView.innerLips = innerLips
+    }
+    
+    if let faceContour = landmark(points: landmarks.faceContour?.normalizedPoints, to: result.boundingBox) {
+      faceView.faceContour = faceContour
+    }  
   }
 }
