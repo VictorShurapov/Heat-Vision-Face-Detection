@@ -63,17 +63,19 @@ class FaceView: UIView {
     guard let context = UIGraphicsGetCurrentContext() else {
       return
     }
-    
     context.saveGState()
-    
-    defer {
-      context.restoreGState()
-    }
-    
+    defer { context.restoreGState() }
     context.addRect(boundingBox)
     
     UIColor.red.setStroke()
+    context.strokePath()
     
+    UIColor.white.setStroke()
+    if !leftEye.isEmpty {
+      context.addLines(between: leftEye)
+    }
+    
+    context.closePath()
     context.strokePath()
   }
 }

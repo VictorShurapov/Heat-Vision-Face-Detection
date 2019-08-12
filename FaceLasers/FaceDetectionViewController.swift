@@ -125,8 +125,12 @@ extension FaceDetectionViewController: AVCaptureVideoDataOutputSampleBufferDeleg
     
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         guard let imageBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        
-        let detectFaceRequest = VNDetectFaceRectanglesRequest(completionHandler: detectedFace)
+      
+      // VNDetectFaceRectanglesRequest
+        //let detectFaceRequest = VNDetectFaceRectanglesRequest(completionHandler: detectedFace)
+      
+      // VNDetectFaceLandmarksRequest
+      let detectFaceRequest = VNDetectFaceLandmarksRequest(completionHandler: detectedFace)
         
         do {
             try sequenceHandler.perform([detectFaceRequest], on: imageBuffer, orientation: .leftMirrored)
@@ -136,7 +140,7 @@ extension FaceDetectionViewController: AVCaptureVideoDataOutputSampleBufferDeleg
     }
 }
 
-// MARK: - detectFaceRequest completion handler and convert function
+// MARK: - detectFaceRequest completion handler and other helper methods
 
 extension FaceDetectionViewController {
     
@@ -148,12 +152,7 @@ extension FaceDetectionViewController {
                 faceView.clear()
                 return
         }
-        let box = result.boundingBox
-        faceView.boundingBox = convert(rect: box)
-        
-        DispatchQueue.main.async {
-            self.faceView.setNeedsDisplay()
-        }
+        updateFaceView(for: result)
     }
     
     func convert(rect: CGRect) -> CGRect {
@@ -164,4 +163,33 @@ extension FaceDetectionViewController {
       
       return CGRect(origin: origin, size: size.cgSize)
     }
+  
+  func landmark(point: CGPoint, to rect: CGRect) -> CGPoint {
+    let absolute = point.absolutePoint(in: rect)
+    
+    let converted = previewLayer.layerPointConverted(fromCaptureDevicePoint: absolute)
+    
+    return converted
+  }
+  
+  func landmark(points: [CGPoint]?, to rect: CGRect) -> [CGPoint]? {
+    return points?.compactMap { landmark(point: $0, to: rect) }
+  }
+  
+  func updateFaceView(for result: VNFaceObservation) {
+    defer {
+      DispatchQueue.main.async {
+        self.faceView.setNeedsDisplay()
+      }
+    }
+    
+    let box = result.boundingBox
+    faceView.boundingBox = convert(rect: box)
+    
+    guard let landmarks = result.landmarks else { return }
+    
+    if let leftEye = landmark(points: landmarks.leftEye?.normalizedPoints, to: result.boundingBox) {
+      faceView.leftEye = leftEye
+    }
+  }
 }
